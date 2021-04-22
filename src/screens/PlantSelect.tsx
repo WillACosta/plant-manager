@@ -3,6 +3,7 @@ import styled from "styled-components/native";
 
 import Header from "../components/Header";
 import BadgeButton from "../components/BadgeButton";
+import PlantCardPrimary from "../components/PlantCardPrimary";
 
 import { Colors, Fonts } from "../shared";
 import api from "../services/api";
@@ -12,24 +13,50 @@ interface EnvironmentProps {
   title: string;
 }
 
+interface PlantProps {
+  id: string;
+  name: string;
+  about: string;
+  water_tips: string;
+  photo: string;
+  environments: [string];
+  frequency: {
+    times: number;
+    repeat_every: string;
+  };
+}
+
 const PlantSelect: React.FC = () => {
   const [environments, setEnvironments] = useState<EnvironmentProps[]>([]);
+  const [plants, setplants] = useState<PlantProps[]>([]);
+  const [environmentSelected, setenvironmentSelected] = useState("all");
 
   useEffect(() => {
-    async function getEnv() {
-      const { data } = await api.get("plants_environments");
-      console.log('DAta', data);
+    async function getEnvironments() {
+      const { data } = await api.get(
+        "plants_environments?_sort=title&_order=asc"
+      );
       setEnvironments([
         {
-          key: 'all',
-          title: 'Todos'
+          key: "all",
+          title: "Todos",
         },
-        ...data
+        ...data,
       ]);
     }
 
-    getEnv();
+    async function getPlantsData() {
+      const { data } = await api.get("plants?_sort=name&_order=asc");
+      setplants(data);
+    }
+
+    getEnvironments();
+    getPlantsData();
   }, []);
+
+  function handleSelectEnvironment(key: string) {
+    setenvironmentSelected(key);
+  }
 
   return (
     <Wrapper>
@@ -39,10 +66,16 @@ const PlantSelect: React.FC = () => {
         <Subtitle>você quer colocar sua planta?</Subtitle>
       </SubheaderContainer>
 
-      <ListContainer>
+      <EnvListContainer>
         <List
           data={environments}
-          renderItem={({ item }) => <BadgeButton title={item.title} />}
+          renderItem={({ item }) => (
+            <BadgeButton
+              title={item.title}
+              active={item.key === environmentSelected}
+              onPress={() => handleSelectEnvironment(item.key)}
+            />
+          )}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
@@ -51,6 +84,19 @@ const PlantSelect: React.FC = () => {
             paddingBottom: 5,
             marginLeft: 32,
             marginVertical: 32,
+          }}
+        />
+      </EnvListContainer>
+
+      <ListContainer>
+        <List
+          data={plants}
+          renderItem={({ item }) => <PlantCardPrimary data={item} />}
+          numColumns={2}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            justifyContent: "center",
+            paddingBottom: 45,
           }}
         />
       </ListContainer>
@@ -63,6 +109,7 @@ export default PlantSelect;
 const Wrapper = styled.SafeAreaView`
   margin-top: 45px;
   /* padding: 0 30px; */
+  padding-bottom: 20px;
   flex: 1;
 `;
 
@@ -86,6 +133,12 @@ const Subtitle = styled.Text`
   margin-bottom: 24px;
 `;
 
-const ListContainer = styled.View``;
+const ListContainer = styled.View`
+  /* flex: 1; */
+  padding: 0 32px;
+  justify-content: center;
+`;
+
+const EnvListContainer = styled.View``;
 
 const List = styled.FlatList``;
